@@ -19,6 +19,7 @@
 #include <stdlib.h>
 
 #include "rsiwidget.h"
+#include "waylandhelper.h"
 
 int main(int argc, char *argv[])
 {
@@ -30,11 +31,11 @@ int main(int argc, char *argv[])
 
     KAboutData aboutData("rsibreak",
                          i18n("RSIBreak"),
-                         "0.13.0",
+                         "1.0.0",
                          i18n("Try to prevent Repetitive Strain Injury by "
                               "reminding a user to rest."),
                          KAboutLicense::GPL,
-                         i18n("(c) 2005-2015, The RSIBreak developers"));
+                         i18n("(c) 2005-2025, The RSIBreak developers"));
 
     aboutData.addAuthor(i18n("Albert Astals Cid"), i18n("Maintainer"), "aacid@kde.org");
 
@@ -63,6 +64,8 @@ int main(int argc, char *argv[])
     }
 
     KCrash::initialize();
+
+    WaylandHelper::initKScreenIntegration();
 
     new RSIObject();
     return app.exec();
