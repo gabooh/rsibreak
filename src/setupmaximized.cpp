@@ -12,10 +12,8 @@
 #include <QApplication>
 #include <QCheckBox>
 #include <QComboBox>
-#include <QDir>
 #include <QFileDialog>
 #include <QGroupBox>
-#include <QHBoxLayout>
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
@@ -27,8 +25,6 @@
 #include <KLocalizedString>
 #include <KPluralHandlingSpinBox>
 #include <KSharedConfig>
-#include <KWindowSystem>
-#include <KX11Extras>
 
 class SetupMaximizedPriv
 {
@@ -73,10 +69,7 @@ SetupMaximized::SetupMaximized(QWidget *parent)
 
     d->effectLabel = new QLabel();
     d->effectBox = new QComboBox(this);
-    if (KX11Extras::compositingActive())
-        d->effectBox->addItem(i18n("Simple Gray Effect"), QVariant(RSIObject::SimpleGray));
-    else
-        d->effectBox->addItem(i18n("Complete Black Effect"), QVariant(RSIObject::SimpleGray));
+    d->effectBox->addItem(i18n("Simple Gray Effect"), QVariant(RSIObject::SimpleGray));
     d->effectBox->addItem(i18n("Show Plasma Dashboard"), QVariant(RSIObject::Plasma));
     d->effectBox->addItem(i18n("Show Slide Show of Images"), QVariant(RSIObject::SlideShow));
     d->effectBox->addItem(i18n("Show a Passive Popup"), QVariant(RSIObject::Popup));
@@ -283,7 +276,7 @@ void SetupMaximized::slotEffectChanged(int current)
     case RSIObject::SimpleGray:
         d->slideshowBox->setVisible(false);
         d->plasmaBox->setVisible(false);
-        d->grayBox->setVisible(KX11Extras::compositingActive());
+        d->grayBox->setVisible(true);
         break;
     case RSIObject::Popup:
     default:
