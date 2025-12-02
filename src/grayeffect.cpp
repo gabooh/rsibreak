@@ -10,7 +10,6 @@ GrayEffect::GrayEffect(QObject *parent)
     : BreakBase(parent)
 {
     setGrayEffectOnAllScreens(true);
-    setReadOnly(true);
 }
 
 GrayEffect::~GrayEffect()
