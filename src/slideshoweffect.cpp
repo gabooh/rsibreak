@@ -7,6 +7,7 @@
 
 #include "slideshoweffect.h"
 #include "breakbase.h"
+#include "waylandhelper.h"
 
 #include <QApplication>
 #include <QDebug>
@@ -16,9 +17,6 @@
 #include <QScreen>
 #include <QTimer>
 #include <QVBoxLayout>
-
-#include <KWindowSystem>
-#include <KX11Extras>
 
 SlideEffect::SlideEffect(QObject *parent)
     : BreakBase(parent)
@@ -31,10 +29,7 @@ SlideEffect::SlideEffect(QObject *parent)
     connect(qApp, &QGuiApplication::screenRemoved, this, &SlideEffect::slotGray);
 
     m_slidewidget = new SlideWidget(nullptr);
-    KX11Extras::forceActiveWindow(m_slidewidget->winId());
-    KX11Extras::setOnAllDesktops(m_slidewidget->winId(), true);
-    KX11Extras::setState(m_slidewidget->winId(), NET::KeepAbove);
-    KX11Extras::setState(m_slidewidget->winId(), NET::FullScreen);
+    WaylandHelper::configureAsOverlay(m_slidewidget);
 
     setReadOnly(true);
 
