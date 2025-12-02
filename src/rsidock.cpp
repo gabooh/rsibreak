@@ -36,10 +36,7 @@
 #include <KMessageBox>
 #include <KNotifyConfigWidget>
 #include <KStandardShortcut>
-#include <KWindowInfo>
 #include <KWindowSystem>
-#include <KX11Extras>
-#include <NETWM>
 #include <QDebug>
 #include <QDialogButtonBox>
 #include <QMenu>
@@ -175,15 +172,12 @@ void RSIDock::slotShowStatistics()
         mainLayout->addWidget(buttonBox);
     }
 
-    if (m_statsDialog->isVisible() && KWindowInfo(m_statsDialog->winId(), NET::WMDesktop).isOnCurrentDesktop()) {
+    if (m_statsDialog->isVisible() && m_statsDialog->isActiveWindow()) {
         m_statsDialog->hide();
     } else {
         m_statsDialog->show();
-
-        if (!m_statsDialog->isActiveWindow())
-            KX11Extras::forceActiveWindow(m_statsDialog->winId());
-
         m_statsDialog->raise();
+        m_statsDialog->activateWindow();
     }
 }
 
