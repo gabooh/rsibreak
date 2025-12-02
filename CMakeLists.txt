@@ -2,6 +2,10 @@ cmake_minimum_required (VERSION 3.16.0 FATAL_ERROR)
 
 project( rsibreak )
 
+# KF6Screen requires C++20 for the spaceship operator
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 set(QT_MIN_VERSION "6.7.0")  # Remember to update the QT_DEPRECATED_WARNINGS_SINCE below
 set(KF_REQUIRED_VERSION "6.8") # Remember to update the KF_DEPRECATED_WARNINGS_SINCE below
 set(KDE_COMPILERSETTINGS_LEVEL "5.82.0")
@@ -40,6 +44,9 @@ find_package(KF6 ${KF_REQUIRED_VERSION} REQUIRED COMPONENTS
     StatusNotifierItem
     ColorScheme
     )
+
+find_package(KF6Screen REQUIRED)
+find_package(LayerShellQt REQUIRED)
 
 add_definitions(-DQT_DEPRECATED_WARNINGS_SINCE=0x060800)
 add_definitions(-DKF_DEPRECATED_WARNINGS_SINCE=0x060900)

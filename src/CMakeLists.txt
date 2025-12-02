@@ -28,6 +28,7 @@ breakcontrol.cpp
 rsiidletime.cpp
 notificator.cpp
 kpassivepopup.cpp
+waylandhelper.cpp
 )
 
 QT_ADD_DBUS_ADAPTOR( rsibreak_sources
@@ -54,8 +55,10 @@ target_link_libraries(rsibreak_lib
     KF6::WindowSystem
     KF6::StatusNotifierItem
     KF6::ColorScheme
+    KF6::Screen
     Qt::DBus
     Qt::GuiPrivate
+    LayerShellQt::Interface
 )
 target_link_libraries(rsibreak rsibreak_lib)
 
