@@ -15,13 +15,12 @@
 #include <QPainterPath>
 #include <QPushButton>
 #include <QScreen>
-#include <QVBoxLayout>
 
 #include <KLocalizedString>
 #include <QHBoxLayout>
 
-BreakControl::BreakControl(QWidget *parent, Qt::WindowType type)
-    : QWidget(parent, type)
+BreakControl::BreakControl(QWidget *parent, Qt::WindowFlags flags)
+    : QWidget(parent, flags)
 {
     m_vbox = new QVBoxLayout;
     m_textLabel = new QLabel(this);

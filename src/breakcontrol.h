@@ -19,7 +19,7 @@ class BreakControl : public QWidget
     Q_OBJECT
 
 public:
-    BreakControl(QWidget *, Qt::WindowType);
+    BreakControl(QWidget *, Qt::WindowFlags);
     void setText(const QString &);
     void showMinimize(bool show);
     void showLock(bool show);
