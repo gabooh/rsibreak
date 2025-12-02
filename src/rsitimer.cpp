@@ -11,15 +11,16 @@
 
 #include "rsitimer.h"
 
+#include <algorithm>
+
+#include <QDBusInterface>
+#include <QDBusReply>
 #include <QDebug>
 #include <QTimer>
 
 #include <kconfig.h>
 #include <kconfiggroup.h>
 #include <ksharedconfig.h>
-#include <kwindowinfo.h>
-#include <kwindowsystem.h>
-#include <kx11extras.h>
 
 #include "rsiglobals.h"
 #include "rsistats.h"
@@ -59,21 +60,75 @@ void RSITimer::createTimers()
 
 void RSITimer::run()
 {
+    connect(m_idleTimeInstance.get(), &RSIIdleTime::idleTimeoutReached, this, &RSITimer::onIdleTimeoutReached);
+    connect(m_idleTimeInstance.get(), &RSIIdleTime::resumingFromIdle, this, &RSITimer::onResumingFromIdle);
+
+    registerIdleTimeouts();
+
     auto timer = new QTimer(this);
     connect(timer, &QTimer::timeout, this, &RSITimer::timeout);
     timer->setTimerType(Qt::TimerType::CoarseTimer);
     timer->start(1000);
 }
 
+void RSITimer::registerIdleTimeouts()
+{
+    m_idleTimeInstance->removeAllIdleTimeouts();
+
+    // Register for 1 second to detect when user becomes idle
+    m_idleTimeInstance->addIdleTimeout(1000);
+
+    // Catch resume events to know when user becomes active
+    m_idleTimeInstance->catchNextResumeEvent();
+}
+
+void RSITimer::onIdleTimeoutReached(int msec)
+{
+    Q_UNUSED(msec)
+    if (!m_isIdle) {
+        m_isIdle = true;
+        m_idleStartTime = QDateTime::currentDateTime();
+    }
+}
+
+void RSITimer::onResumingFromIdle()
+{
+    m_isIdle = false;
+}
+
 bool RSITimer::suppressionDetector()
 {
-    for (WId win : KX11Extras::windows()) {
-        KWindowInfo info(win, NET::WMDesktop | NET::WMState | NET::XAWMState);
-        if ((info.state() & NET::FullScreen) && !info.isMinimized() && info.isOnCurrentDesktop()) {
-            return true;
-        }
+    // Query systemd-logind for active idle inhibitors
+    // See https://systemd.io/INHIBITOR_LOCKS/
+    QDBusInterface logind(QStringLiteral("org.freedesktop.login1"),
+                          QStringLiteral("/org/freedesktop/login1"),
+                          QStringLiteral("org.freedesktop.DBus.Properties"),
+                          QDBusConnection::systemBus());
+
+    if (!logind.isValid()) {
+        qDebug() << "Could not connect to systemd-logind for inhibitor detection";
+        return false;
     }
-    return false;
+
+    // Get the BlockInhibited property which contains a colon-separated list
+    // of inhibited actions (e.g., "idle:sleep:shutdown")
+    QDBusReply<QVariant> reply = logind.call(QStringLiteral("Get"),
+                                              QStringLiteral("org.freedesktop.login1.Manager"),
+                                              QStringLiteral("BlockInhibited"));
+
+    if (!reply.isValid()) {
+        qDebug() << "Failed to query BlockInhibited:" << reply.error().message();
+        return false;
+    }
+
+    QString inhibited = reply.value().toString();
+    bool idleInhibited = inhibited.split(QLatin1Char(':')).contains(QStringLiteral("idle"));
+
+    if (idleInhibited) {
+        qDebug() << "Idle is inhibited, suppressing break. Active inhibitors:" << inhibited;
+    }
+
+    return idleInhibited;
 }
 
 void RSITimer::hibernationDetector(const int totalIdle)
@@ -96,7 +151,10 @@ void RSITimer::hibernationDetector(const int totalIdle)
 
 int RSITimer::idleTime()
 {
-    int totalIdle = m_idleTimeInstance->getIdleTime() / 1000;
+    int totalIdle = 0;
+    if (m_isIdle) {
+        totalIdle = m_idleStartTime.secsTo(QDateTime::currentDateTime());
+    }
     hibernationDetector(totalIdle);
     return totalIdle;
 }
@@ -253,18 +311,21 @@ void RSITimer::timeout()
     }
     case TimerState::Suggesting: {
         // Using popupCounter to count down our patience here.
-        int breakTime = m_popupCounter->tick(idleSeconds);
-        if (breakTime > 0) {
-            // User kept working throw the suggestion timeout. Well, their loss.
+        int configuredBreakTime = m_popupCounter->tick(idleSeconds);
+        if (configuredBreakTime > 0) {
+            // User kept working through the suggestion timeout. Well, their loss.
             emit relax(-1, false);
-            breakTime = m_pauseCounter->counterLeft();
-            doBreakNow(breakTime, false);
+            int remainingTime = m_pauseCounter->counterLeft();
+            // Ensure at least 50% of configured break time to prevent instant dismissal
+            int minimumTime = configuredBreakTime / 2;
+            int actualBreakTime = std::max(remainingTime, minimumTime);
+            doBreakNow(actualBreakTime, false);
             break;
         }
 
         bool isInputLong = (m_shortInputCounter->tick(idleSeconds) > 0);
         int inverseTick = (idleSeconds == 0 && isInputLong) ? 1 : 0; // inverting as we account idle seconds here.
-        breakTime = m_pauseCounter->tick(inverseTick);
+        int breakTime = m_pauseCounter->tick(inverseTick);
         if (breakTime > 0) {
             // User has waited out the pause, back to monitoring.
             resetAfterBreak();

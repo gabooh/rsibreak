@@ -10,6 +10,7 @@
 #ifndef RSITimer_H
 #define RSITimer_H
 
+#include <QDateTime>
 #include <QVector>
 #include <memory>
 
@@ -107,6 +108,17 @@ private slots:
     */
     virtual void timeout();
 
+    /**
+     * Called when an idle timeout is reached.
+     * @param msec The timeout duration that was reached
+     */
+    void onIdleTimeoutReached(int msec);
+
+    /**
+     * Called when user activity resumes after being idle.
+     */
+    void onResumingFromIdle();
+
 signals:
     /** Enforce a fullscreen big break. */
     void breakNow();
@@ -172,6 +184,10 @@ private:
     bool m_useIdleTimers;
     QVector<int> m_intervals;
 
+    // Idle state tracking (for event-based idle detection)
+    bool m_isIdle = false;
+    QDateTime m_idleStartTime;
+
     enum class TimerState {
         Suspended = 0, // user has suspended either via dbus or tray.
         Monitoring, // normal cycle, waiting for break to trigger.
@@ -190,6 +206,7 @@ private:
     void suggestBreak(const int time);
     void defaultUpdateToolTip();
     void createTimers();
+    void registerIdleTimeouts();
 
     // This function is called when a break has passed.
     void resetAfterBreak();
