@@ -7,6 +7,8 @@
 
 #include <QtTest>
 
+class RSITimer;
+
 class RSITimerTest : public QObject
 {
     Q_OBJECT
@@ -25,6 +27,9 @@ private slots:
     void skipBreak();
     void noPopupBreak();
     void regularBreaks();
+
+private:
+    void setTimerIdleState(RSITimer &timer, int idleSeconds);
 };
 
 #endif // RSIBREAK_RSITIMER_TEST_H
