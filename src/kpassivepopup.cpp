@@ -10,7 +10,6 @@
 // Qt
 #include <QBitmap>
 #include <QBoxLayout>
-#include <QGuiApplication>
 #include <QLabel>
 #include <QMouseEvent>
 #include <QPainter>
@@ -20,9 +19,6 @@
 #include <QSystemTrayIcon>
 #include <QTimer>
 #include <QToolTip>
-
-#include "private/qtx11extras_p.h"
-#include <netwm.h>
 
 #include <KWindowInfo>
 
@@ -41,10 +37,7 @@ public:
         , hideTimer(new QTimer(q))
         , autoDelete(false)
     {
-        if (QX11Info::isPlatformX11()) {
-            q->setWindowFlags(POPUP_FLAGS | Qt::X11BypassWindowManagerHint);
-        } else
-            q->setWindowFlags(POPUP_FLAGS);
+        q->setWindowFlags(POPUP_FLAGS);
 
         q->setFrameStyle(QFrame::Box | QFrame::Plain);
         q->setLineWidth(2);
@@ -429,24 +422,13 @@ void KPassivePopup::positionSelf()
     QRect target;
 
     if (d->window) {
-        if (QX11Info::isPlatformX11()) {
-            NETWinInfo ni(QX11Info::connection(), d->window, QX11Info::appRootWindow(), NET::WMIconGeometry | NET::WMState, NET::Properties2());
-
-            // Try to put the popup by the taskbar entry
-            if (!(ni.state() & NET::SkipTaskbar)) {
-                NETRect r = ni.iconGeometry();
-                target.setRect(r.pos.x, r.pos.y, r.size.width, r.size.height);
-            }
+        // Try to position by the widget
+        QWidget *widget = QWidget::find(d->window);
+        if (widget) {
+            target = widget->geometry();
         }
-        // If that failed, put it by the window itself
 
-        if (target.isNull()) {
-            // Avoid making calls to the window system if we can
-            QWidget *widget = QWidget::find(d->window);
-            if (widget) {
-                target = widget->geometry();
-            }
-        }
+        // If that failed, try KWindowInfo
         if (target.isNull()) {
             KWindowInfo info(d->window, NET::WMGeometry);
             if (info.valid()) {
