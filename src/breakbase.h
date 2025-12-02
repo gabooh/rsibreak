@@ -8,8 +8,6 @@
 #ifndef BREAKBASE_H
 #define BREAKBASE_H
 
-#include <QHash>
-#include <QObject>
 #include <QWidget>
 
 class BreakControl;
@@ -80,6 +78,9 @@ public:
 
 protected:
     bool event(QEvent *event) override;
+
+private:
+    int m_alpha = 180; // Default alpha value (0-255)
 };
 
 #endif // BREAKBASE_H

@@ -7,12 +7,9 @@
 
 #include "breakbase.h"
 #include "breakcontrol.h"
-
-#include <KWindowSystem>
-#include <KX11Extras>
+#include "waylandhelper.h"
 
 #include <QApplication>
-#include <QDebug>
 #include <QKeyEvent>
 #include <QObject>
 #include <QPainter>
@@ -25,7 +22,9 @@ BreakBase::BreakBase(QObject *parent)
     , m_disableShortcut(false)
     , m_grayEffectOnAllScreensActivated(false)
 {
-    m_breakControl = new BreakControl(nullptr, Qt::Popup);
+    // Use Qt::Window instead of Qt::Popup to prevent auto-close behavior under Wayland
+    // The layer-shell will handle the overlay positioning and behavior
+    m_breakControl = new BreakControl(nullptr, Qt::Window | Qt::FramelessWindowHint);
     m_breakControl->hide();
     m_breakControl->installEventFilter(this);
     connect(m_breakControl, &BreakControl::skip, this, &BreakBase::skip);
@@ -44,16 +43,9 @@ void BreakBase::activate()
     if (m_grayEffectOnAllScreensActivated)
         m_grayEffectOnAllScreens->activate();
 
+    WaylandHelper::configureAsBreakControl(m_breakControl);
     m_breakControl->show();
     m_breakControl->setFocus();
-
-    KX11Extras::forceActiveWindow(m_breakControl->winId());
-    KX11Extras::setOnAllDesktops(m_breakControl->winId(), true);
-    KX11Extras::setState(m_breakControl->winId(), NET::KeepAbove);
-    KX11Extras::setState(m_breakControl->winId(), NET::FullScreen);
-
-    m_breakControl->grabKeyboard();
-    m_breakControl->grabMouse();
 }
 
 void BreakBase::deactivate()
@@ -61,8 +53,6 @@ void BreakBase::deactivate()
     if (m_grayEffectOnAllScreensActivated)
         m_grayEffectOnAllScreens->deactivate();
 
-    m_breakControl->releaseMouse();
-    m_breakControl->releaseKeyboard();
     m_breakControl->hide();
 }
 
@@ -70,14 +60,11 @@ bool BreakBase::eventFilter(QObject *obj, QEvent *event)
 {
     if (event->type() == QEvent::KeyPress) {
         QKeyEvent *keyEvent = static_cast<QKeyEvent *>(event);
-        qDebug() << "Ate key press" << keyEvent->key();
         if (!m_disableShortcut && keyEvent->key() == Qt::Key_Escape) {
-            qDebug() << "Escape";
             emit skip();
         }
         return true;
     } else if (m_readOnly && (event->type() == QEvent::MouseButtonPress || event->type() == QEvent::MouseButtonDblClick)) {
-        qDebug() << "Ate mouse click event";
         return true;
     } else {
         return QObject::eventFilter(obj, event);
@@ -144,19 +131,14 @@ void BreakBase::excludeGrayEffectOnScreen(QScreen *screen)
 GrayEffectOnAllScreens::GrayEffectOnAllScreens()
 {
     for (QScreen *screen : QGuiApplication::screens()) {
-        GrayWidget *grayWidget = new GrayWidget(nullptr);
+        auto *grayWidget = new GrayWidget(nullptr);
         m_widgets.insert(screen, grayWidget);
 
         const QRect rect = screen->geometry();
         grayWidget->move(rect.topLeft());
         grayWidget->setGeometry(rect);
 
-        KX11Extras::forceActiveWindow(grayWidget->winId());
-        KX11Extras::setState(grayWidget->winId(), NET::KeepAbove);
-        KX11Extras::setOnAllDesktops(grayWidget->winId(), true);
-        KX11Extras::setState(grayWidget->winId(), NET::FullScreen);
-
-        qDebug() << "Created widget for screen" << screen << "Position:" << rect.topLeft();
+        WaylandHelper::configureAsOverlay(grayWidget);
     }
 }
 
@@ -167,7 +149,6 @@ GrayEffectOnAllScreens::~GrayEffectOnAllScreens()
 
 void GrayEffectOnAllScreens::disable(QScreen *screen)
 {
-    qDebug() << "Removing widget from screen" << screen;
     if (!m_widgets.contains(screen))
         return;
 
@@ -199,29 +180,31 @@ void GrayEffectOnAllScreens::setLevel(int val)
 //-------------------- GrayWidget ----------------------------//
 
 GrayWidget::GrayWidget(QWidget *parent)
-    : QWidget(parent, Qt::Popup)
+    // Use Qt::Window instead of Qt::Popup to prevent auto-close behavior under Wayland
+    : QWidget(parent, Qt::Window | Qt::FramelessWindowHint)
+    , m_alpha(180)
 {
     setAutoFillBackground(false);
+    setAttribute(Qt::WA_TranslucentBackground);
 }
 
 bool GrayWidget::event(QEvent *event)
 {
     if (event->type() == QEvent::Paint) {
-        qDebug() << "GrayWidget::event";
         QPainter p(this);
         p.setCompositionMode(QPainter::CompositionMode_Source);
-        p.fillRect(rect(), QColor(0, 0, 0, 180));
+        p.fillRect(rect(), QColor(0, 0, 0, m_alpha));
     }
     return QWidget::event(event);
 }
 
 void GrayWidget::setLevel(int val)
 {
-    double level = 0;
-    if (val > 0)
-        level = (double)val / 100;
-
-    qDebug() << "New Value" << level;
-    setWindowOpacity(level);
+    // val is 0-100 percentage, convert to 0-255 alpha
+    if (val > 0) {
+        m_alpha = static_cast<int>(val * 255.0 / 100.0);
+    } else {
+        m_alpha = 0;
+    }
     update();
 }
