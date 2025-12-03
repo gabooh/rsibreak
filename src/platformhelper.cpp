@@ -113,12 +113,12 @@ void configureAsBreakControl(QWidget *widget)
 
         layerWindow->setLayer(LayerShellQt::Window::LayerOverlay);
 
-        // Anchor to top - window uses natural size and is centered
-        layerWindow->setAnchors(LayerShellQt::Window::AnchorTop);
+        // Anchor to bottom - window uses natural size and is centered
+        layerWindow->setAnchors(LayerShellQt::Window::AnchorBottom);
 
-        // Margin from top: 10% of screen height
-        int topMargin = screen->geometry().height() / 10;
-        layerWindow->setMargins(QMargins(0, topMargin, 0, 0));
+        // Margin from bottom: 10% of screen height
+        int bottomMargin = screen->geometry().height() / 10;
+        layerWindow->setMargins(QMargins(0, 0, 0, bottomMargin));
 
         // -1 means don't reserve space (overlap everything)
         layerWindow->setExclusiveZone(-1);
@@ -127,10 +127,10 @@ void configureAsBreakControl(QWidget *widget)
     } else if (isX11()) {
         widget->winId();
 
-        // Calculate position: centered horizontally, 10% from top
+        // Calculate position: centered horizontally, 10% from bottom
         QSize widgetSize = widget->sizeHint();
         int x = screenGeometry.x() + (screenGeometry.width() - widgetSize.width()) / 2;
-        int y = screenGeometry.y() + screenGeometry.height() / 10;
+        int y = screenGeometry.y() + screenGeometry.height() - widgetSize.height() - screenGeometry.height() / 10;
         widget->move(x, y);
 
         KX11Extras::forceActiveWindow(widget->winId());

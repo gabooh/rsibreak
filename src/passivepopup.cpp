@@ -11,8 +11,6 @@
 #include <QMouseEvent>
 #include <QScreen>
 
-static const int MARGIN = 30;
-
 PassivePopup::PassivePopup(QWidget *parent)
     : KPassivePopup(parent)
 {
@@ -20,10 +18,10 @@ PassivePopup::PassivePopup(QWidget *parent)
 
 void PassivePopup::show()
 {
-    // Hardcoded to show at bottom-center for now
+    // Show at bottom-center, 10% from bottom edge (same as BreakControl)
     const QRect screenRect = QGuiApplication::primaryScreen()->availableGeometry();
     const int posX = screenRect.left() + (screenRect.width() - sizeHint().width()) / 2;
-    const int posY = screenRect.bottom() - sizeHint().height() - MARGIN;
+    const int posY = screenRect.bottom() - sizeHint().height() - screenRect.height() / 10;
     KPassivePopup::show(QPoint(posX, posY));
 }
 
