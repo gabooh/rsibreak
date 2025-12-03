@@ -27,7 +27,12 @@ class RSIObject : public QObject
     Q_CLASSINFO("D-Bus Interface", "org.rsibreak.rsiwidget")
 
 public:
-    enum Effects { SimpleGray = 0, Plasma, SlideShow, Popup };
+    enum Effects {
+        SimpleGray = 0,
+        Plasma,
+        SlideShow,
+        Popup
+    };
 
     /**
      * Constructor

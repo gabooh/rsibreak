@@ -66,8 +66,7 @@ void RSITimerTest::triggerSimpleTinyBreak()
         QList<QVariant> spy1UpdateIdleAvgSignals = spy1UpdateIdleAvg.takeFirst();
         bool ok;
         double newAvg = spy1UpdateIdleAvgSignals.at(0).toDouble(&ok);
-        QVERIFY2(ok && (newAvg >= lastAvg) && (newAvg <= 100.0),
-                 QString("Unexpected newAvg value: %1, lastAvg: %2").arg(newAvg).arg(lastAvg).toLatin1());
+        QVERIFY2(ok && (newAvg >= lastAvg) && (newAvg <= 100.0), QString("Unexpected newAvg value: %1, lastAvg: %2").arg(newAvg).arg(lastAvg).toLatin1());
     }
 
     // Part two, obeying and idle as suggested.
@@ -97,8 +96,8 @@ void RSITimerTest::triggerComplexTinyBreak()
     std::unique_ptr<RSIIdleTimeFake> idle_time(new RSIIdleTimeFake());
     RSITimer timer(std::move(idle_time), m_intervals, true, true);
 
-    int part1 = 10;                                              // Non-idle
-    int part2 = 40;                                              // Idle
+    int part1 = 10; // Non-idle
+    int part2 = 40; // Idle
     int part3 = m_intervals[TINY_BREAK_INTERVAL] - part1 - part2; // The rest non-idle.
 
     // Part 1, no idleness.
@@ -164,14 +163,12 @@ void RSITimerTest::triggerSimpleBigBreak()
     std::unique_ptr<RSIIdleTimeFake> idle_time(new RSIIdleTimeFake());
     RSITimer timer(std::move(idle_time), m_intervals, true, true);
 
-    int tinyBreaks = m_intervals[BIG_BREAK_INTERVAL]
-        / (m_intervals[TINY_BREAK_INTERVAL] + m_intervals[PATIENCE_INTERVAL] + m_intervals[TINY_BREAK_DURATION]);
+    int tinyBreaks = m_intervals[BIG_BREAK_INTERVAL] / (m_intervals[TINY_BREAK_INTERVAL] + m_intervals[PATIENCE_INTERVAL] + m_intervals[TINY_BREAK_DURATION]);
     // We don't tick big pause timer during tiny breaks and patience, so it will actually happen later.
     // In time the patience wears out, the tiny break could already accumulate some seconds due to SHORT_INPUT_INTERVAL filter, so substract them.
     int ticks = m_intervals[BIG_BREAK_INTERVAL]
         + tinyBreaks
-            * (m_intervals[PATIENCE_INTERVAL] + m_intervals[TINY_BREAK_DURATION]
-               - (m_intervals[PATIENCE_INTERVAL] - 1) % m_intervals[SHORT_INPUT_INTERVAL]);
+            * (m_intervals[PATIENCE_INTERVAL] + m_intervals[TINY_BREAK_DURATION] - (m_intervals[PATIENCE_INTERVAL] - 1) % m_intervals[SHORT_INPUT_INTERVAL]);
 
     QSignalSpy spyEndLongBreak(&timer, SIGNAL(endLongBreak()));
 
@@ -251,8 +248,7 @@ void RSITimerTest::screenLock()
     QList<QVariant> spyRelaxSignals = spyRelax.takeFirst();
     QCOMPARE(spyRelaxSignals.at(0).toInt(), RELAX_ENDED_MAGIC_VALUE);
     QCOMPARE(spyMinimize.count(), 1);
-    QVERIFY2(timer.m_bigBreakCounter->counterLeft() < m_intervals[BIG_BREAK_INTERVAL],
-             "Big break counter was reset on screen lock when it should have not.");
+    QVERIFY2(timer.m_bigBreakCounter->counterLeft() < m_intervals[BIG_BREAK_INTERVAL], "Big break counter was reset on screen lock when it should have not.");
 }
 
 void RSITimerTest::skipBreak()
@@ -276,8 +272,7 @@ void RSITimerTest::skipBreak()
     QList<QVariant> spyRelaxSignals = spyRelax.takeFirst();
     QCOMPARE(spyRelaxSignals.at(0).toInt(), RELAX_ENDED_MAGIC_VALUE);
     QCOMPARE(spyMinimize.count(), 1);
-    QVERIFY2(timer.m_bigBreakCounter->counterLeft() < m_intervals[BIG_BREAK_INTERVAL],
-             "Big break counter was reset on skip break when it should have not.");
+    QVERIFY2(timer.m_bigBreakCounter->counterLeft() < m_intervals[BIG_BREAK_INTERVAL], "Big break counter was reset on skip break when it should have not.");
 }
 
 void RSITimerTest::noPopupBreak()
@@ -333,8 +328,7 @@ void RSITimerTest::regularBreaks()
     QSignalSpy spyEndShortBreak(&timer, SIGNAL(endShortBreak()));
     QSignalSpy spyEndLongBreak(&timer, SIGNAL(endLongBreak()));
 
-    int tinyBreaks = m_intervals[BIG_BREAK_INTERVAL]
-        / (m_intervals[TINY_BREAK_INTERVAL] + m_intervals[PATIENCE_INTERVAL] + m_intervals[TINY_BREAK_DURATION]);
+    int tinyBreaks = m_intervals[BIG_BREAK_INTERVAL] / (m_intervals[TINY_BREAK_INTERVAL] + m_intervals[PATIENCE_INTERVAL] + m_intervals[TINY_BREAK_DURATION]);
     int tick = 0;
 
     for (int j = 0; j < tinyBreaks; j++) {
