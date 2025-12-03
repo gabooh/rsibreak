@@ -6,6 +6,7 @@
 */
 
 #include "passivepopup.h"
+#include "platformhelper.h"
 
 #include <QGuiApplication>
 #include <QMouseEvent>
@@ -18,11 +19,20 @@ PassivePopup::PassivePopup(QWidget *parent)
 
 void PassivePopup::show()
 {
-    // Show at bottom-center, 10% from bottom edge (same as BreakControl)
+    // Calculate position: centered horizontally, 10% from bottom of primary screen
     const QRect screenRect = QGuiApplication::primaryScreen()->availableGeometry();
     const int posX = screenRect.left() + (screenRect.width() - sizeHint().width()) / 2;
     const int posY = screenRect.bottom() - sizeHint().height() - screenRect.height() / 10;
-    KPassivePopup::show(QPoint(posX, posY));
+
+    move(posX, posY);
+    QWidget::show();
+    PlatformHelper::configureAsNotification(this);
+}
+
+void PassivePopup::setVisible(bool visible)
+{
+    // Bypass KPassivePopup::setVisible() which calls positionSelf() and overrides our manual positioning
+    QFrame::setVisible(visible);
 }
 
 void PassivePopup::mouseReleaseEvent(QMouseEvent *event)

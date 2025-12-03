@@ -59,6 +59,7 @@ target_link_libraries(rsibreak_lib
     Qt::DBus
     Qt::GuiPrivate
     LayerShellQt::Interface
+    Plasma::KWaylandClient
 )
 target_link_libraries(rsibreak rsibreak_lib)
 

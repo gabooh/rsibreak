@@ -47,6 +47,7 @@ find_package(KF6 ${KF_REQUIRED_VERSION} REQUIRED COMPONENTS
 
 find_package(KF6Screen REQUIRED)
 find_package(LayerShellQt REQUIRED)
+find_package(KWayland REQUIRED)
 
 add_definitions(-DQT_DEPRECATED_WARNINGS_SINCE=0x060800)
 add_definitions(-DKF_DEPRECATED_WARNINGS_SINCE=0x060900)

@@ -7,15 +7,7 @@
 
 #include <KWindowSystem>
 
-#include <QDebug>
-#include <QGuiApplication>
-#include <QScreen>
 #include <QWidget>
-#include <QWindow>
-
-// Wayland-specific includes
-#include <LayerShellQt/Shell>
-#include <LayerShellQt/Window>
 
 #include <KScreen/Config>
 #include <KScreen/GetConfigOperation>
@@ -25,7 +17,16 @@
 #include <KX11Extras>
 #include <NETWM>
 
+// KWayland for plasma-shell protocol
+#include <KWayland/Client/connection_thread.h>
+#include <KWayland/Client/plasmashell.h>
+#include <KWayland/Client/registry.h>
+#include <KWayland/Client/surface.h>
+#include <LayerShellQt/Window>
+
 static QString s_primaryOutputName;
+static KWayland::Client::PlasmaShell *s_plasmaShell = nullptr;
+static KWayland::Client::Registry *s_registry = nullptr;
 
 namespace PlatformHelper
 {
@@ -157,6 +158,72 @@ void activateWindow(QWidget *widget)
     }
 }
 
+void configureStayOnTop(QWidget *widget)
+{
+    if (!widget) {
+        return;
+    }
+
+    if (isWayland()) {
+        widget->winId();
+        QWindow *window = widget->windowHandle();
+        if (!window) {
+            return;
+        }
+
+        auto *layerWindow = LayerShellQt::Window::get(window);
+        if (!layerWindow) {
+            return;
+        }
+
+        // LayerTop = above normal windows but below overlay
+        layerWindow->setLayer(LayerShellQt::Window::LayerTop);
+        layerWindow->setExclusiveZone(0); // Don't reserve space
+        layerWindow->setKeyboardInteractivity(LayerShellQt::Window::KeyboardInteractivityOnDemand);
+    } else if (isX11()) {
+        widget->winId();
+        KX11Extras::setState(widget->winId(), NET::KeepAbove);
+    }
+}
+
+void configureAsNotification(QWidget *widget)
+{
+    if (!widget) {
+        return;
+    }
+
+    if (isWayland()) {
+        widget->winId();
+        QWindow *window = widget->windowHandle();
+        if (!window) {
+            qDebug() << "No window handle for notification widget";
+            return;
+        }
+
+        if (!s_plasmaShell) {
+            qDebug() << "PlasmaShell not available, notification may not stay on top";
+            return;
+        }
+
+        // Get the wl_surface for this window
+        auto *surface = KWayland::Client::Surface::fromWindow(window);
+        if (!surface) {
+            qDebug() << "Could not get Wayland surface for window";
+            return;
+        }
+
+        // Create PlasmaShellSurface with Notification role
+        auto *plasmaSurface = s_plasmaShell->createSurface(surface, widget);
+        if (plasmaSurface) {
+            plasmaSurface->setRole(KWayland::Client::PlasmaShellSurface::Role::Notification);
+            qDebug() << "Configured window as Notification via plasma-shell";
+        }
+    } else if (isX11()) {
+        widget->winId();
+        KX11Extras::setState(widget->winId(), NET::KeepAbove);
+    }
+}
+
 void initKScreenIntegration()
 {
     auto *op = new KScreen::GetConfigOperation();
@@ -176,6 +243,24 @@ void initKScreenIntegration()
         }
         op->deleteLater();
     });
+
+    // Initialize PlasmaShell on Wayland
+    if (isWayland()) {
+        auto *connection = KWayland::Client::ConnectionThread::fromApplication();
+        if (!connection) {
+            qDebug() << "No Wayland connection available";
+            return;
+        }
+
+        s_registry = new KWayland::Client::Registry();
+        QObject::connect(s_registry, &KWayland::Client::Registry::plasmaShellAnnounced, [](quint32 name, quint32 version) {
+            s_plasmaShell = s_registry->createPlasmaShell(name, version);
+            qDebug() << "PlasmaShell interface initialized";
+        });
+
+        s_registry->create(connection);
+        s_registry->setup();
+    }
 }
 
 QScreen *getKDEPrimaryScreen()

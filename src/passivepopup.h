@@ -15,6 +15,7 @@ class PassivePopup : public KPassivePopup
 public:
     explicit PassivePopup(QWidget *parent = nullptr);
     void show();
+    void setVisible(bool visible) override;
 
 protected:
     void mouseReleaseEvent(QMouseEvent *event) override;

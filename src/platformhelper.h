@@ -49,6 +49,22 @@ void configureAsBreakControl(QWidget *widget);
 void activateWindow(QWidget *widget);
 
 /**
+ * Configure a window to stay on top of other windows.
+ * On Wayland: Uses layer-shell LayerTop without changing position.
+ * On X11: Uses KX11Extras to set KeepAbove state.
+ * @param widget The widget to configure
+ */
+void configureStayOnTop(QWidget *widget);
+
+/**
+ * Configure a window as a notification popup.
+ * On Wayland: Uses plasma-shell protocol with Notification role.
+ * On X11: Uses KX11Extras to set KeepAbove state.
+ * @param widget The widget to configure
+ */
+void configureAsNotification(QWidget *widget);
+
+/**
  * Initialize KScreen integration for primary screen detection.
  * Should be called once at application startup.
  */
