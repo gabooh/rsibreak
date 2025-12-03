@@ -18,8 +18,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "platformhelper.h"
 #include "rsiwidget.h"
-#include "waylandhelper.h"
 
 int main(int argc, char *argv[])
 {
@@ -65,7 +65,7 @@ int main(int argc, char *argv[])
 
     KCrash::initialize();
 
-    WaylandHelper::initKScreenIntegration();
+    PlatformHelper::initKScreenIntegration();
 
     new RSIObject();
     return app.exec();

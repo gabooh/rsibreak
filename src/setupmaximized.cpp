@@ -6,6 +6,7 @@
 
 // Local includes.
 #include "setupmaximized.h"
+#include "platformhelper.h"
 #include "rsiwidget.h" // effects enum
 
 // QT includes.
@@ -25,6 +26,7 @@
 #include <KLocalizedString>
 #include <KPluralHandlingSpinBox>
 #include <KSharedConfig>
+#include <KX11Extras>
 
 class SetupMaximizedPriv
 {
@@ -69,7 +71,15 @@ SetupMaximized::SetupMaximized(QWidget *parent)
 
     d->effectLabel = new QLabel();
     d->effectBox = new QComboBox(this);
-    d->effectBox->addItem(i18n("Simple Gray Effect"), QVariant(RSIObject::SimpleGray));
+
+    // On X11 without compositing, the gray effect will be completely black
+    bool hasCompositing = !PlatformHelper::isX11() || KX11Extras::compositingActive();
+    if (hasCompositing) {
+        d->effectBox->addItem(i18n("Simple Gray Effect"), QVariant(RSIObject::SimpleGray));
+    } else {
+        d->effectBox->addItem(i18n("Complete Black Effect"), QVariant(RSIObject::SimpleGray));
+    }
+
     d->effectBox->addItem(i18n("Show Plasma Dashboard"), QVariant(RSIObject::Plasma));
     d->effectBox->addItem(i18n("Show Slide Show of Images"), QVariant(RSIObject::SlideShow));
     d->effectBox->addItem(i18n("Show a Passive Popup"), QVariant(RSIObject::Popup));

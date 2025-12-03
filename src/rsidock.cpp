@@ -21,6 +21,7 @@
 */
 
 #include "rsidock.h"
+#include "platformhelper.h"
 #include "rsistats.h"
 #include "rsistatwidget.h"
 #include "setup.h"
@@ -35,8 +36,6 @@
 #include <KLocalizedString>
 #include <KMessageBox>
 #include <KNotifyConfigWidget>
-#include <KStandardShortcut>
-#include <KWindowSystem>
 #include <QDebug>
 #include <QDialogButtonBox>
 #include <QMenu>
@@ -175,9 +174,7 @@ void RSIDock::slotShowStatistics()
     if (m_statsDialog->isVisible() && m_statsDialog->isActiveWindow()) {
         m_statsDialog->hide();
     } else {
-        m_statsDialog->show();
-        m_statsDialog->raise();
-        m_statsDialog->activateWindow();
+        PlatformHelper::activateWindow(m_statsDialog);
     }
 }
 

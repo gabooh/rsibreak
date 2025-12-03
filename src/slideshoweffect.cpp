@@ -7,7 +7,7 @@
 
 #include "slideshoweffect.h"
 #include "breakbase.h"
-#include "waylandhelper.h"
+#include "platformhelper.h"
 
 #include <QApplication>
 #include <QDebug>
@@ -29,7 +29,7 @@ SlideEffect::SlideEffect(QObject *parent)
     connect(qApp, &QGuiApplication::screenRemoved, this, &SlideEffect::slotGray);
 
     m_slidewidget = new SlideWidget(nullptr);
-    WaylandHelper::configureAsOverlay(m_slidewidget);
+    PlatformHelper::configureAsOverlay(m_slidewidget);
 
     setReadOnly(true);
 

@@ -10,6 +10,7 @@
 */
 
 #include "rsitimer.h"
+#include "platformhelper.h"
 
 #include <algorithm>
 
@@ -21,6 +22,11 @@
 #include <kconfig.h>
 #include <kconfiggroup.h>
 #include <ksharedconfig.h>
+
+// X11-specific includes
+#include <KWindowInfo>
+#include <KX11Extras>
+#include <NETWM>
 
 #include "rsiglobals.h"
 #include "rsistats.h"
@@ -98,7 +104,19 @@ void RSITimer::onResumingFromIdle()
 
 bool RSITimer::suppressionDetector()
 {
-    // Query systemd-logind for active idle inhibitors
+    // X11: Check for fullscreen windows using X11 window enumeration
+    if (PlatformHelper::isX11()) {
+        for (WId win : KX11Extras::windows()) {
+            KWindowInfo info(win, NET::WMDesktop | NET::WMState | NET::XAWMState);
+            if ((info.state() & NET::FullScreen) && !info.isMinimized() && info.isOnCurrentDesktop()) {
+                qDebug() << "Fullscreen window detected on X11, suppressing break";
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Wayland: Query systemd-logind for active idle inhibitors
     // See https://systemd.io/INHIBITOR_LOCKS/
     QDBusInterface logind(QStringLiteral("org.freedesktop.login1"),
                           QStringLiteral("/org/freedesktop/login1"),
@@ -112,9 +130,7 @@ bool RSITimer::suppressionDetector()
 
     // Get the BlockInhibited property which contains a colon-separated list
     // of inhibited actions (e.g., "idle:sleep:shutdown")
-    QDBusReply<QVariant> reply = logind.call(QStringLiteral("Get"),
-                                              QStringLiteral("org.freedesktop.login1.Manager"),
-                                              QStringLiteral("BlockInhibited"));
+    QDBusReply<QVariant> reply = logind.call(QStringLiteral("Get"), QStringLiteral("org.freedesktop.login1.Manager"), QStringLiteral("BlockInhibited"));
 
     if (!reply.isValid()) {
         qDebug() << "Failed to query BlockInhibited:" << reply.error().message();

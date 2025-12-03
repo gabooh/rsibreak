@@ -28,7 +28,7 @@ breakcontrol.cpp
 rsiidletime.cpp
 notificator.cpp
 kpassivepopup.cpp
-waylandhelper.cpp
+platformhelper.cpp
 )
 
 QT_ADD_DBUS_ADAPTOR( rsibreak_sources

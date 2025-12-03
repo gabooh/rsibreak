@@ -7,7 +7,7 @@
 
 #include "breakbase.h"
 #include "breakcontrol.h"
-#include "waylandhelper.h"
+#include "platformhelper.h"
 
 #include <QApplication>
 #include <QKeyEvent>
@@ -22,9 +22,12 @@ BreakBase::BreakBase(QObject *parent)
     , m_disableShortcut(false)
     , m_grayEffectOnAllScreensActivated(false)
 {
-    // Use Qt::Window instead of Qt::Popup to prevent auto-close behavior under Wayland
-    // The layer-shell will handle the overlay positioning and behavior
-    m_breakControl = new BreakControl(nullptr, Qt::Window | Qt::FramelessWindowHint);
+    Qt::WindowFlags flags = Qt::Window | Qt::FramelessWindowHint;
+    // X11: Bypass window manager to prevent stacking reordering when clicking on overlay
+    if (PlatformHelper::isX11()) {
+        flags |= Qt::X11BypassWindowManagerHint;
+    }
+    m_breakControl = new BreakControl(nullptr, flags);
     m_breakControl->hide();
     m_breakControl->installEventFilter(this);
     connect(m_breakControl, &BreakControl::skip, this, &BreakBase::skip);
@@ -43,7 +46,7 @@ void BreakBase::activate()
     if (m_grayEffectOnAllScreensActivated)
         m_grayEffectOnAllScreens->activate();
 
-    WaylandHelper::configureAsBreakControl(m_breakControl);
+    PlatformHelper::configureAsBreakControl(m_breakControl);
     m_breakControl->show();
     m_breakControl->setFocus();
 }
@@ -138,7 +141,12 @@ GrayEffectOnAllScreens::GrayEffectOnAllScreens()
         grayWidget->move(rect.topLeft());
         grayWidget->setGeometry(rect);
 
-        WaylandHelper::configureAsOverlay(grayWidget);
+        // X11: Make overlay transparent to mouse events so clicks reach BreakControl
+        if (PlatformHelper::isX11()) {
+            grayWidget->setAttribute(Qt::WA_TransparentForMouseEvents);
+        }
+
+        PlatformHelper::configureAsOverlay(grayWidget);
     }
 }
 
